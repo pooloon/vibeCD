@@ -2,6 +2,10 @@ export function formatWon(amount: number): string {
   return `${amount.toLocaleString("ko-KR")}원`;
 }
 
+export function formatWonSymbol(amount: number): string {
+  return `₩ ${amount.toLocaleString("ko-KR")}`;
+}
+
 export function formatCompactWon(amount: number): string {
   if (amount >= 10000) {
     const man = amount / 10000;

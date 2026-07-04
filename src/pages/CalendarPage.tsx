@@ -14,7 +14,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { db, toggleEntryRealized } from "../db";
 import type { DaySummary, LedgerEntry } from "../types";
 import { emptyDaySummary, summarizeEntries } from "../types";
-import { formatCompactWon, formatWon, todayParts } from "../utils";
+import { formatCompactWon, formatWonSymbol, todayParts } from "../utils";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -88,16 +88,40 @@ export default function CalendarPage({
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>캘린더 대시보드</h1>
-        <p>일별 수익·지출과 실현/미실현 금액을 확인합니다.</p>
-      </header>
-
-      <div className="total-banner">
-        <div>이번 달 예상 순이익</div>
-        <div className="big">{formatWon(monthSummary.totalNet)}</div>
-        <div style={{ marginTop: 8, fontSize: "0.9rem", opacity: 0.9 }}>
-          실현 순이익 {formatWon(monthSummary.realizedNet)}
+      <div>
+        <p className="section-label">월간 손익</p>
+        <div className="kpi-grid">
+          <div className="kpi-card kpi-hero">
+            <div className="kpi-label">이번 달 순이익</div>
+            <div className="kpi-number">{formatWonSymbol(monthSummary.totalNet)}</div>
+            <div className="tx-meta" style={{ color: "var(--income)", marginTop: 4 }}>
+              실현 {formatWonSymbol(monthSummary.realizedNet)}
+            </div>
+          </div>
+          <div className="kpi-card income">
+            <div className="kpi-label">실현 수익</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(monthSummary.incomeRealized)}
+            </div>
+          </div>
+          <div className="kpi-card muted">
+            <div className="kpi-label">미실현 수익</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(monthSummary.incomeUnrealized)}
+            </div>
+          </div>
+          <div className="kpi-card expense">
+            <div className="kpi-label">실현 지출</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(monthSummary.expenseRealized)}
+            </div>
+          </div>
+          <div className="kpi-card muted">
+            <div className="kpi-label">미실현 지출</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(monthSummary.expenseUnrealized)}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -179,39 +203,40 @@ export default function CalendarPage({
         </div>
       </div>
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>
-          {selectedDay
-            ? `${month}월 ${selectedDay}일 상세`
-            : "이번 달 합계"}
-        </h3>
-        <div className="summary-grid">
-          <div className="summary-item income">
-            <div className="label">실현 수익</div>
-            <div className="value">{formatWon(selectedSummary.incomeRealized)}</div>
-          </div>
-          <div className="summary-item muted">
-            <div className="label">미실현 수익</div>
-            <div className="value">
-              {formatWon(selectedSummary.incomeUnrealized)}
+      <div>
+        <p className="section-label">
+          {selectedDay ? `${month}월 ${selectedDay}일 상세` : "이번 달 합계"}
+        </p>
+        <div className="kpi-grid">
+          <div className="kpi-card income">
+            <div className="kpi-label">실현 수익</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(selectedSummary.incomeRealized)}
             </div>
           </div>
-          <div className="summary-item expense">
-            <div className="label">실현 지출</div>
-            <div className="value">{formatWon(selectedSummary.expenseRealized)}</div>
+          <div className="kpi-card muted">
+            <div className="kpi-label">미실현 수익</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(selectedSummary.incomeUnrealized)}
+            </div>
           </div>
-          <div className="summary-item muted">
-            <div className="label">미실현 지출</div>
-            <div className="value">
-              {formatWon(selectedSummary.expenseUnrealized)}
+          <div className="kpi-card expense">
+            <div className="kpi-label">실현 지출</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(selectedSummary.expenseRealized)}
+            </div>
+          </div>
+          <div className="kpi-card muted">
+            <div className="kpi-label">미실현 지출</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(selectedSummary.expenseUnrealized)}
             </div>
           </div>
         </div>
       </div>
 
       {selectedDay && (
-        <div className="card">
-          <h3 style={{ marginTop: 0 }}>당일 내역</h3>
+        <div className="card" style={{ padding: 16 }}>
           {(dayEntries ?? []).length === 0 ? (
             <div className="empty-state">내역이 없습니다.</div>
           ) : (
@@ -228,35 +253,34 @@ export default function CalendarPage({
 }
 
 function EntryRow({ entry }: { entry: LedgerEntry }) {
+  const isIncome = entry.type === "INCOME";
   return (
-    <div className="entry-item">
-      <div className="entry-top">
+    <div className="tx-row">
+      <div className="tx-left">
+        <div className={`tx-icon ${isIncome ? "income" : "expense"}`}>
+          {isIncome ? "↑" : "↓"}
+        </div>
         <div>
-          <div className="entry-title">{entry.title}</div>
-          <div className="entry-meta">
+          <div className="tx-title">{entry.title}</div>
+          <div className="tx-meta">
             {entry.category}
             {entry.roomName ? ` · ${entry.roomName}호` : ""}
           </div>
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontWeight: 700,
-              color: entry.type === "INCOME" ? "var(--income)" : "var(--expense)",
-            }}
-          >
-            {entry.type === "INCOME" ? "+" : "-"}
-            {formatWon(entry.amount)}
-          </div>
-          <button
-            type="button"
-            className={`badge ${entry.isRealized ? "realized" : "unrealized"}`}
-            style={{ border: "none", marginTop: 6, cursor: "pointer" }}
-            onClick={() => entry.id && void toggleEntryRealized(entry.id)}
-          >
-            {entry.isRealized ? "실현" : "미실현"}
-          </button>
+      </div>
+      <div className="tx-right">
+        <div className={`tx-amount ${isIncome ? "income" : "expense"}`}>
+          {isIncome ? "+" : "-"}
+          {formatWonSymbol(entry.amount).replace("₩ ", "₩")}
         </div>
+        <button
+          type="button"
+          className={`badge ${entry.isRealized ? "realized" : "unrealized"}`}
+          style={{ border: "none", cursor: "pointer" }}
+          onClick={() => entry.id && void toggleEntryRealized(entry.id)}
+        >
+          {entry.isRealized ? "실현" : "미실현"}
+        </button>
       </div>
     </div>
   );

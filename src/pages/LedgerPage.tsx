@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { addManualEntry, db, toggleEntryRealized } from "../db";
 import type { EntryType, LedgerEntry } from "../types";
-import { formatWon, todayParts } from "../utils";
+import { formatWonSymbol, todayParts } from "../utils";
 
 type Filter = "ALL" | "REALIZED" | "UNREALIZED";
 
@@ -60,13 +60,10 @@ export default function LedgerPage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>수입 · 지출</h1>
-        <p>실제 지출/수입과 아직 실현되지 않은 금액을 구분해 관리합니다.</p>
-      </header>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>내역 추가</h3>
+      <div className="card form-card">
+        <p className="section-label" style={{ marginBottom: 0 }}>
+          내역 추가
+        </p>
         <div className="form-grid">
           <div className="field">
             <label>구분</label>
@@ -157,16 +154,15 @@ export default function LedgerPage() {
           </div>
         </div>
 
-        {message && <p style={{ color: "var(--primary)" }}>{message}</p>}
+        {message && <p className="message">{message}</p>}
 
-        <div className="btn-row">
-          <button type="button" className="btn btn-primary" onClick={() => void handleAdd()}>
-            추가
-          </button>
-        </div>
+        <button type="button" className="btn btn-primary" onClick={() => void handleAdd()}>
+          내역 추가
+        </button>
       </div>
 
-      <div className="card">
+      <div>
+        <p className="section-label">거래 내역</p>
         <div className="filter-row">
           {(["ALL", "REALIZED", "UNREALIZED"] as const).map((item) => (
             <button
@@ -180,52 +176,53 @@ export default function LedgerPage() {
           ))}
         </div>
 
-        {filtered.length === 0 ? (
-          <div className="empty-state">표시할 내역이 없습니다.</div>
-        ) : (
-          <div className="entry-list">
-            {filtered.map((entry) => (
-              <LedgerRow key={entry.id} entry={entry} />
-            ))}
-          </div>
-        )}
+        <div className="card" style={{ padding: 16 }}>
+          {filtered.length === 0 ? (
+            <div className="empty-state">표시할 내역이 없습니다.</div>
+          ) : (
+            <div className="entry-list">
+              {filtered.map((entry) => (
+                <LedgerRow key={entry.id} entry={entry} />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 function LedgerRow({ entry }: { entry: LedgerEntry }) {
+  const isIncome = entry.type === "INCOME";
   return (
-    <div className="entry-item">
-      <div className="entry-top">
+    <div className="tx-row">
+      <div className="tx-left">
+        <div className={`tx-icon ${isIncome ? "income" : "expense"}`}>
+          {isIncome ? "↑" : "↓"}
+        </div>
         <div>
-          <div className="entry-title">{entry.title}</div>
-          <div className="entry-meta">
+          <div className="tx-title">{entry.title}</div>
+          <div className="tx-meta">
             {entry.year}.{String(entry.month).padStart(2, "0")}.
             {String(entry.day).padStart(2, "0")} · {entry.category}
             {entry.roomName ? ` · ${entry.roomName}호` : ""}
           </div>
-          {entry.note && <div className="entry-meta">{entry.note}</div>}
+          {entry.note && <div className="tx-meta">{entry.note}</div>}
         </div>
-        <div style={{ textAlign: "right" }}>
-          <div
-            style={{
-              fontWeight: 700,
-              color: entry.type === "INCOME" ? "var(--income)" : "var(--expense)",
-            }}
-          >
-            {entry.type === "INCOME" ? "+" : "-"}
-            {formatWon(entry.amount)}
-          </div>
-          <button
-            type="button"
-            className={`badge ${entry.isRealized ? "realized" : "unrealized"}`}
-            style={{ border: "none", marginTop: 6, cursor: "pointer" }}
-            onClick={() => entry.id && void toggleEntryRealized(entry.id)}
-          >
-            {entry.isRealized ? "실현" : "미실현"} (탭하여 변경)
-          </button>
+      </div>
+      <div className="tx-right">
+        <div className={`tx-amount ${isIncome ? "income" : "expense"}`}>
+          {isIncome ? "+" : "-"}
+          {formatWonSymbol(entry.amount).replace("₩ ", "₩")}
         </div>
+        <button
+          type="button"
+          className={`badge ${entry.isRealized ? "realized" : "unrealized"}`}
+          style={{ border: "none", cursor: "pointer" }}
+          onClick={() => entry.id && void toggleEntryRealized(entry.id)}
+        >
+          {entry.isRealized ? "실현" : "미실현"}
+        </button>
       </div>
     </div>
   );

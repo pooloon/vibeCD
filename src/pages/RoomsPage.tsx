@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { db } from "../db";
 import { ROOM_NAMES, isContractActiveInMonth, type Contract } from "../types";
-import { formatWon, todayParts } from "../utils";
+import { formatWonSymbol, todayParts } from "../utils";
 
 export default function RoomsPage() {
   const today = todayParts();
@@ -28,21 +28,28 @@ export default function RoomsPage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>방 현황</h1>
-        <p>
-          {today.year}년 {today.month}월 기준 · 입주 {occupied} / 공실 {vacant}
-        </p>
-      </header>
-
-      <div className="summary-grid" style={{ marginBottom: 12 }}>
-        <div className="summary-item income">
-          <div className="label">입주</div>
-          <div className="value">{occupied}개</div>
+      <div className="kpi-grid">
+        <div className="kpi-card income">
+          <div className="kpi-label">입주</div>
+          <div className="kpi-value">
+            <span className="kpi-number">{occupied}</span>
+            <span className="kpi-unit">Rooms</span>
+          </div>
         </div>
-        <div className="summary-item muted">
-          <div className="label">공실</div>
-          <div className="value">{vacant}개</div>
+        <div className="kpi-card expense">
+          <div className="kpi-label">공실</div>
+          <div className="kpi-value">
+            <span className="kpi-number">{vacant}</span>
+            <span className="kpi-unit">Rooms</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="section-header">
+        <h2>실시간 방 현황</h2>
+        <div className="section-header-meta">
+          <span aria-hidden>▦</span>
+          <span>{ROOM_NAMES.length}개 총합</span>
         </div>
       </div>
 
@@ -56,15 +63,17 @@ export default function RoomsPage() {
               key={room}
               className={`room-tile ${isOccupied ? "occupied" : "vacant"}`}
             >
-              <div className="room-tile-number">{room}</div>
+              <div className="room-tile-top">
+                <div className="room-tile-number">{room}</div>
+                {isOccupied && <span className="room-occupied-dot" aria-hidden />}
+              </div>
               {isOccupied ? (
                 <>
-                  <div className="room-tile-status">입주</div>
                   <div className="room-tile-tenant">
                     {memberMap.get(contract!.memberId)?.name ?? "입주자"}
                   </div>
                   <div className="room-tile-rent">
-                    {formatWon(contract!.monthlyRent)}
+                    {formatWonSymbol(contract!.monthlyRent)}
                   </div>
                 </>
               ) : (

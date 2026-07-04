@@ -9,7 +9,7 @@ import {
   terminateContract,
 } from "../db";
 import { ROOM_NAMES, type RoomName } from "../types";
-import { formatWon, todayParts } from "../utils";
+import { formatWonSymbol, todayParts } from "../utils";
 
 export default function ContractPage() {
   const today = todayParts();
@@ -84,35 +84,30 @@ export default function ContractPage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>계약서 등록</h1>
-        <p>월단위 계약을 등록하면 매월 1일 월세(미실현)가 자동 생성됩니다.</p>
-      </header>
+      <div className="card form-card">
+        <div className="field">
+          <label>방 번호 선택</label>
+          <div className="room-chip-row">
+            {ROOM_NAMES.map((room) => (
+              <button
+                key={room}
+                type="button"
+                className={`room-chip ${roomName === room ? "selected" : ""}`}
+                onClick={() => setRoomName(room)}
+              >
+                {room}호
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <div className="card">
         <div className="form-grid">
           <div className="field">
-            <label>방 번호</label>
-            <div className="room-chip-row">
-              {ROOM_NAMES.map((room) => (
-                <button
-                  key={room}
-                  type="button"
-                  className={`room-chip ${roomName === room ? "selected" : ""}`}
-                  onClick={() => setRoomName(room)}
-                >
-                  {room}호
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="field">
-            <label>입주자</label>
+            <label>입주자 성함</label>
             <input
               value={tenantName}
               onChange={(e) => setTenantName(e.target.value)}
-              placeholder="이름"
+              placeholder="예: 홍길동"
             />
           </div>
 
@@ -202,26 +197,21 @@ export default function ContractPage() {
           </div>
         </div>
 
-        {message && (
-          <p style={{ color: "var(--primary)", fontSize: "0.9rem" }}>{message}</p>
-        )}
+        {message && <p className="message">{message}</p>}
 
-        <div className="btn-row">
-          <button type="button" className="btn btn-primary" onClick={() => void handleSubmit()}>
-            계약서 등록
-          </button>
-        </div>
+        <button type="button" className="btn btn-primary" onClick={() => void handleSubmit()}>
+          계약서 등록
+        </button>
       </div>
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>등록된 계약</h3>
+      <div>
+        <p className="section-label">등록된 계약</p>
         {(contracts ?? []).length === 0 ? (
           <div className="empty-state">등록된 계약이 없습니다.</div>
         ) : (
-          <div className="entry-list">
-            {(contracts ?? []).map((contract) => {
-              const member = memberMap.get(contract.memberId);
-              return (
+          (contracts ?? []).map((contract) => {
+            const member = memberMap.get(contract.memberId);
+            return (
               <div key={contract.id} className="contract-card">
                 <h3>
                   {contract.roomName}호 · {member?.name ?? "입주자"}
@@ -232,10 +222,10 @@ export default function ContractPage() {
                     ? ` ~ ${contract.endYear}.${String(contract.endMonth).padStart(2, "0")}`
                     : " · 무기한"}
                 </div>
-                <div className="entry-meta">월세 {formatWon(contract.monthlyRent)}</div>
-                {member?.phone && (
-                  <div className="entry-meta">{member.phone}</div>
-                )}
+                <div className="entry-meta">
+                  월세 {formatWonSymbol(contract.monthlyRent)}
+                </div>
+                {member?.phone && <div className="entry-meta">{member.phone}</div>}
                 {contract.note && <div className="entry-meta">{contract.note}</div>}
                 {contract.isActive && contract.id && (
                   <div className="btn-row" style={{ marginTop: 8 }}>
@@ -263,8 +253,7 @@ export default function ContractPage() {
                 )}
               </div>
             );
-            })}
-          </div>
+          })
         )}
       </div>
     </div>

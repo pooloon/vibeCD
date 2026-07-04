@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { clearAllData, db, exportBackup, importBackup } from "../db";
-import type { BackupData } from "../types";
+import { ROOM_NAMES, isContractActiveInMonth, type BackupData } from "../types";
 import { summarizeEntries } from "../types";
-import { formatWon, todayParts } from "../utils";
+import { formatWonSymbol, todayParts } from "../utils";
 
 export default function SummaryPage() {
   const today = todayParts();
@@ -23,6 +23,29 @@ export default function SummaryPage() {
   const allSummary = summarizeEntries(entries ?? []);
   const monthSummary = summarizeEntries(monthEntries);
   const activeContracts = (contracts ?? []).filter((c) => c.isActive).length;
+
+  const occupiedRooms = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of contracts ?? []) {
+      if (c.isActive && isContractActiveInMonth(c, today.year, today.month)) {
+        set.add(c.roomName);
+      }
+    }
+    return set.size;
+  }, [contracts, today.year, today.month]);
+
+  const occupancyRate = Math.round((occupiedRooms / ROOM_NAMES.length) * 100);
+
+  const expiringSoon = useMemo(() => {
+    const now = new Date();
+    const limit = new Date(now);
+    limit.setDate(limit.getDate() + 30);
+    return (contracts ?? []).filter((c) => {
+      if (!c.isActive || c.endYear === null || c.endMonth === null) return false;
+      const end = new Date(c.endYear, c.endMonth, 0);
+      return end >= now && end <= limit;
+    }).length;
+  }, [contracts]);
 
   const handleExport = async () => {
     const backup = await exportBackup();
@@ -55,68 +78,90 @@ export default function SummaryPage() {
 
   return (
     <div className="page">
-      <header className="page-header">
-        <h1>합계</h1>
-        <p>실현·미실현 수익/지출과 순이익 총합계를 확인합니다.</p>
-      </header>
-
-      <div className="total-banner">
-        <div>전체 예상 순이익</div>
-        <div className="big">{formatWon(allSummary.totalNet)}</div>
-        <div style={{ marginTop: 8, fontSize: "0.9rem", opacity: 0.9 }}>
-          실현 순이익 {formatWon(allSummary.realizedNet)}
-        </div>
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>전체 누적 합계</h3>
-        <SummaryGrid summary={allSummary} />
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>
-          이번 달 ({today.year}.{String(today.month).padStart(2, "0")}) 합계
-        </h3>
-        <SummaryGrid summary={monthSummary} />
-      </div>
-
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>운영 현황</h3>
-        <div className="summary-grid">
-          <div className="summary-item">
-            <div className="label">활성 계약</div>
-            <div className="value">{activeContracts}건</div>
+      <div>
+        <p className="section-label">손익 요약</p>
+        <div className="kpi-grid">
+          <div className="kpi-card kpi-hero">
+            <div className="kpi-label">이번 달 순이익</div>
+            <div className="kpi-number">{formatWonSymbol(monthSummary.totalNet)}</div>
+            <div className="tx-meta" style={{ color: "var(--income)", marginTop: 4 }}>
+              실현 {formatWonSymbol(monthSummary.realizedNet)}
+            </div>
           </div>
-          <div className="summary-item">
-            <div className="label">전체 내역</div>
-            <div className="value">{(entries ?? []).length}건</div>
+          <div className="kpi-card primary">
+            <div className="kpi-label">누적 총 수입</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(allSummary.totalIncome)}
+            </div>
           </div>
-          <div className="summary-item income">
-            <div className="label">미수 월세(미실현 수익)</div>
-            <div className="value">{formatWon(allSummary.incomeUnrealized)}</div>
-          </div>
-          <div className="summary-item expense">
-            <div className="label">예정 지출(미실현)</div>
-            <div className="value">{formatWon(allSummary.expenseUnrealized)}</div>
+          <div className="kpi-card expense">
+            <div className="kpi-label">누적 총 지출</div>
+            <div className="kpi-number" style={{ fontSize: "1.125rem" }}>
+              {formatWonSymbol(allSummary.totalExpense)}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="card">
-        <h3 style={{ marginTop: 0 }}>데이터 백업 · 복원</h3>
-        <p style={{ margin: "0 0 12px", color: "var(--muted)", fontSize: "0.9rem" }}>
-          안드로이드·PC 간 데이터 이동 시 JSON 백업 파일을 사용하세요.
-        </p>
-        <div className="btn-row">
-          <button type="button" className="btn btn-primary" onClick={() => void handleExport()}>
-            백업 다운로드
+      <div>
+        <p className="section-label">운영 통계</p>
+        <div className="bento-grid">
+          <div className="bento-active">
+            <div>
+              <div style={{ fontSize: "0.875rem", opacity: 0.9 }}>📄</div>
+              <div style={{ marginTop: 12, fontSize: "0.875rem" }}>활성 계약</div>
+            </div>
+            <div style={{ fontSize: "1.5rem", fontWeight: 700 }}>{activeContracts}건</div>
+          </div>
+          <div className="bento-rate">
+            <div className="tx-meta">가동률</div>
+            <div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--income)" }}>
+                {occupancyRate}%
+              </div>
+              <div className="tx-meta">{ROOM_NAMES.length}개 중 {occupiedRooms}개</div>
+            </div>
+          </div>
+          <div className="bento-alert">
+            <div className="bento-alert-left">
+              <div className="alert-icon">⏱</div>
+              <div>
+                <div style={{ fontWeight: 500 }}>만기 예정 계약</div>
+                <div className="tx-meta">향후 30일 이내 {expiringSoon}건</div>
+              </div>
+            </div>
+            <span className="tx-meta">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <p className="section-label">데이터 관리</p>
+        <div className="settings-list">
+          <button type="button" className="settings-item" onClick={() => void handleExport()}>
+            <div className="settings-icon">⬇</div>
+            <div>
+              <div className="settings-item-title">JSON 백업 다운로드</div>
+              <div className="settings-item-desc">전체 데이터를 JSON 파일로 보냅니다.</div>
+            </div>
           </button>
           <button
             type="button"
-            className="btn btn-secondary"
+            className="settings-item"
             onClick={() => fileRef.current?.click()}
           >
-            백업 복원
+            <div className="settings-icon">⬆</div>
+            <div>
+              <div className="settings-item-title">백업 복원</div>
+              <div className="settings-item-desc">JSON 파일을 통해 데이터를 복구합니다.</div>
+            </div>
+          </button>
+          <button type="button" className="settings-item" onClick={() => void handleReset()}>
+            <div className="settings-icon danger">⚠</div>
+            <div>
+              <div className="settings-item-title danger">데이터 전체 초기화</div>
+              <div className="settings-item-desc">모든 내역을 영구적으로 삭제합니다.</div>
+            </div>
           </button>
         </div>
         <input
@@ -130,56 +175,10 @@ export default function SummaryPage() {
             e.target.value = "";
           }}
         />
-        <div className="btn-row">
-          <button type="button" className="btn btn-secondary" onClick={() => void handleReset()}>
-            전체 데이터 초기화
-          </button>
-        </div>
-        {message && <p style={{ color: "var(--primary)" }}>{message}</p>}
+        {message && <p className="message">{message}</p>}
       </div>
-    </div>
-  );
-}
 
-function SummaryGrid({
-  summary,
-}: {
-  summary: ReturnType<typeof summarizeEntries>;
-}) {
-  return (
-    <div className="summary-grid">
-      <div className="summary-item income">
-        <div className="label">실현 수익</div>
-        <div className="value">{formatWon(summary.incomeRealized)}</div>
-      </div>
-      <div className="summary-item muted">
-        <div className="label">미실현 수익</div>
-        <div className="value">{formatWon(summary.incomeUnrealized)}</div>
-      </div>
-      <div className="summary-item expense">
-        <div className="label">실현 지출</div>
-        <div className="value">{formatWon(summary.expenseRealized)}</div>
-      </div>
-      <div className="summary-item muted">
-        <div className="label">미실현 지출</div>
-        <div className="value">{formatWon(summary.expenseUnrealized)}</div>
-      </div>
-      <div className="summary-item income">
-        <div className="label">수익 총합</div>
-        <div className="value">{formatWon(summary.totalIncome)}</div>
-      </div>
-      <div className="summary-item expense">
-        <div className="label">지출 총합</div>
-        <div className="value">{formatWon(summary.totalExpense)}</div>
-      </div>
-      <div className="summary-item net">
-        <div className="label">실현 순이익</div>
-        <div className="value">{formatWon(summary.realizedNet)}</div>
-      </div>
-      <div className="summary-item net">
-        <div className="label">예상 순이익</div>
-        <div className="value">{formatWon(summary.totalNet)}</div>
-      </div>
+      <footer className="app-footer">Room Manager v1.0.0 · 연습실 통합 운영</footer>
     </div>
   );
 }

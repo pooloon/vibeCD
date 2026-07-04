@@ -1,4 +1,16 @@
+node_modules/
+dist/
+.DS_Store
+*.local
+.vite/
 .venv/
 __pycache__/
 *.pyc
-.DS_Store
+
+# Android (StudioManager)
+StudioManager/.gradle/
+StudioManager/app/build/
+StudioManager/build/
+StudioManager/local.properties
+StudioManager/.idea/
+*.iml

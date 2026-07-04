@@ -7,6 +7,11 @@ dist/
 __pycache__/
 *.pyc
 
+# Secrets — 절대 커밋하지 않음
+.env
+.env.*
+ghp_*
+
 # Android (StudioManager)
 StudioManager/.gradle/
 StudioManager/app/build/

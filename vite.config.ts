@@ -1,0 +1,25 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+
+export default defineConfig({
+  plugins: [react()],
+  server: {
+    proxy: {
+      "/api/yahoo": {
+        target: "https://query1.finance.yahoo.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/yahoo/, ""),
+      },
+      "/api/dart": {
+        target: "https://opendart.fss.or.kr",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/dart/, "/api"),
+      },
+      "/api/krx": {
+        target: "http://data.krx.co.kr",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/krx/, ""),
+      },
+    },
+  },
+});

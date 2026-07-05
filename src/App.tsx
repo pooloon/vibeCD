@@ -6,6 +6,7 @@ import {
   IconRooms,
   IconSettings,
 } from "./components/NavIcons";
+import ChatBot from "./components/ChatBot";
 import CalendarPage from "./pages/CalendarPage";
 import ContractPage from "./pages/ContractPage";
 import LedgerPage from "./pages/LedgerPage";
@@ -61,14 +62,17 @@ export default function App() {
 
       <main className="app-main">
         {tab === "calendar" && (
-          <CalendarPage
-            year={year}
-            month={month}
-            onMonthChange={(nextYear, nextMonth) => {
-              setYear(nextYear);
-              setMonth(nextMonth);
-            }}
-          />
+          <>
+            <ChatBot />
+            <CalendarPage
+              year={year}
+              month={month}
+              onMonthChange={(nextYear, nextMonth) => {
+                setYear(nextYear);
+                setMonth(nextMonth);
+              }}
+            />
+          </>
         )}
         {tab === "rooms" && <RoomsPage />}
         {tab === "contract" && <ContractPage />}

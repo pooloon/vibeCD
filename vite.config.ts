@@ -35,5 +35,15 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    proxy: {
+      "/openai-api": {
+        target: "https://api.openai.com",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/openai-api/, ""),
+        headers: process.env.OPENAI_API_KEY
+          ? { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` }
+          : undefined,
+      },
+    },
   },
 });

@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
+import OpenAISettingsSection from "../components/OpenAISettingsSection";
 import { clearAllData, db, exportBackup, importBackup } from "../db";
 import { ROOM_NAMES, isContractActiveInMonth, type BackupData } from "../types";
 import { summarizeEntries } from "../types";
@@ -134,6 +135,8 @@ export default function SummaryPage() {
           </div>
         </div>
       </div>
+
+      <OpenAISettingsSection />
 
       <div>
         <p className="section-label">데이터 관리</p>
